@@ -135,20 +135,10 @@ cd /var/www/reviactyl
 curl -Lo panel.tar.gz https://github.com/reviactyl/panel/releases/latest/download/panel.tar.gz
 tar -xzvf panel.tar.gz
 chmod -R 755 storage/* bootstrap/cache/
-# --- MariaDB Setup ---
-DB_NAME=reviactyl
-DB_USER=reviactyl
-DB_PASS=reviactyl
-mariadb -e "CREATE USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
-mariadb -e "CREATE DATABASE ${DB_NAME};"
-mariadb -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'127.0.0.1' WITH GRANT OPTION;"
-mariadb -e "FLUSH PRIVILEGES;"
+
 # --- .env Setup ---
 cp .env.example .env
 sed -i "s|APP_URL=.*|APP_URL=https://${DOMAIN}|g" .env
-sed -i "s|DB_DATABASE=.*|DB_DATABASE=${DB_NAME}|g" .env
-sed -i "s|DB_USERNAME=.*|DB_USERNAME=${DB_USER}|g" .env
-sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${DB_PASS}|g" .env
 if ! grep -q "^APP_ENVIRONMENT_ONLY=" .env; then
     echo "APP_ENVIRONMENT_ONLY=false" >> .env
 fi
