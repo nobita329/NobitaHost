@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # ==================================================
 #  SERVER CONTROL CENTER | PROXMOX ONLY
@@ -61,7 +62,8 @@ install_proxmox() {
     draw_header
     install_docker
 
-    echo -e "  ${BOLD}┌── [ INSTALL PROXMOX ]${RESET}"
+    # PORT SELECTION
+    echo -e "  ${BOLD}┌── [ PROXMOX PORT ]${RESET}"
     echo -e "  ${BOLD}│${RESET}"
     echo -e "  ${GREY}[${Y}1${GREY}]${RESET} Default Port ${C}(8006)${RESET}"
     echo -e "  ${GREY}[${Y}2${GREY}]${RESET} Custom Port"
@@ -74,8 +76,28 @@ install_proxmox() {
     else
         PORT=8006
     fi
-
     echo "$PORT" > "$PROXMOX_PORT_FILE"
+    echo
+
+    # PASSWORD SELECTION
+    echo -e "  ${BOLD}┌── [ PROXMOX PASSWORD ]${RESET}"
+    echo -e "  ${BOLD}│${RESET}"
+    echo -e "  ${GREY}[${Y}1${GREY}]${RESET} Default Password ${C}(root)${RESET}"
+    echo -e "  ${GREY}[${Y}2${GREY}]${RESET} Custom Password"
+    echo -e "  ${BOLD}│${RESET}"
+    read -p "  └─➤ Select Option: " pass_choice
+
+    if [ "$pass_choice" == "2" ]; then
+        read -p "    ➤ Enter Custom Password: " CUSTOM_PASS
+        # If user leaves it blank accidentally, default to root
+        if [ -z "$CUSTOM_PASS" ]; then
+            PROXMOX_PASS="root"
+        else
+            PROXMOX_PASS="$CUSTOM_PASS"
+        fi
+    else
+        PROXMOX_PASS="root"
+    fi
 
     echo -e "\n  ${B}[+] Creating persistent directories...${RESET}"
     mkdir -p /opt/proxmox/data
@@ -90,14 +112,14 @@ install_proxmox() {
       --privileged \
       --restart unless-stopped \
       --stop-timeout 120 \
-      -e PASSWORD="root" \
+      -e PASSWORD="${PROXMOX_PASS}" \
       -p ${PORT}:8006 \
       -v /opt/proxmox/data:/var/lib/vz \
       -v /opt/proxmox/config:/var/lib/pve-cluster \
       nobitaa/proxmox
 
     echo -e "  ${G}[✓] Installed! Access: https://$host:${PORT}${RESET}"
-    echo -e "  ${GREY}Note: Default Password is 'root'${RESET}"
+    echo -e "  ${GREY}Note: Your Login Password is '${Y}${PROXMOX_PASS}${GREY}'${RESET}"
     pause
 }
 
