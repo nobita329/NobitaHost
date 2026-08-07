@@ -147,6 +147,7 @@ ask "Database Name" "panel" DB_NAME
 ask "Database User" "pterodactyl" DB_USER
 ask "Database Password" "yourPassword" DB_PASS
 select_version "$GITHUB_REPO" "version_PANEL"
+ask "Local SSL? (y = Local / n = Certbot)" "y" SSL_TYPE
 
 # --- FINAL VALIDATION LOOP ---
 echo -e "\n  ${GOLD}┌─[ REVIEW CONFIGURATION ]${NC}"
@@ -203,6 +204,7 @@ apt update
 
 # --- Install PHP + extensions ---
 apt install -y php${PHP_VERSION} php${PHP_VERSION}-{cli,fpm,common,mysql,mbstring,bcmath,xml,zip,curl,gd,tokenizer,ctype,simplexml,dom} mariadb-server nginx redis-server
+apt install -y certbot python3-certbot-nginx
 
 # --- Install Composer ---
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -254,12 +256,37 @@ apt install -y cron
 systemctl enable --now cron
 (crontab -l 2>/dev/null; echo "* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1") | crontab -
 
-# --- Nginx Setup ---
+# --- SSL Setup ---
+if [ "$SSL_TYPE" = "y" ]; then
+    echo "Using Local SSL..."
+
 mkdir -p /etc/certs/panel
 openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
     -subj "/C=NA/ST=NA/L=NA/O=NA/CN=${DOMAIN}" \
     -keyout /etc/certs/panel/privkey.pem -out /etc/certs/panel/fullchain.pem
 
+elif [ "$SSL_TYPE" = "n" ]; then
+    echo "Using Certbot SSL..."
+
+
+    certbot certonly \
+        --nginx \
+        --non-interactive \
+        --agree-tos \
+        --register-unsafely-without-email \
+        -d "${DOMAIN}"
+
+    mkdir -p /etc/certs/panel
+
+    ln -sf /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/certs/panel/fullchain.pem
+    ln -sf /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/certs/panel/privkey.pem
+
+else
+    echo "Invalid option!"
+    exit 1
+fi
+
+# --- Nginx Setup ---
 tee /etc/nginx/sites-available/pterodactyl.conf > /dev/null << EOF
 server {
     listen 80;
