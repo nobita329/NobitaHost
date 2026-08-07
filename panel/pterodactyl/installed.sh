@@ -147,7 +147,7 @@ ask "Database Name" "panel" DB_NAME
 ask "Database User" "pterodactyl" DB_USER
 ask "Database Password" "yourPassword" DB_PASS
 select_version "$GITHUB_REPO" "version_PANEL"
-ask "Local SSL? (y = Local / n = Certbot)" "y" SSL_TYPE
+ask "SSL Type (y=Local, n=Certbot, 0=None)" "y" SSL_TYPE
 
 # --- FINAL VALIDATION LOOP ---
 echo -e "\n  ${GOLD}┌─[ REVIEW CONFIGURATION ]${NC}"
@@ -281,10 +281,48 @@ elif [ "$SSL_TYPE" = "n" ]; then
     ln -sf /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/certs/panel/fullchain.pem
     ln -sf /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/certs/panel/privkey.pem
 
+elif [ "$SSL_TYPE" = "0" ]; then
+    echo "Using HTTP only (No SSL)"
+
 else
-    echo "Invalid option!"
+    echo "Invalid SSL option!"
     exit 1
 fi
+
+# --- Nginx Setup ---
+if [ "$SSL_TYPE" = "0" ]; then
+
+cat > /etc/nginx/sites-available/pterodactyl.conf <<EOF
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    root /var/www/pterodactyl/public;
+    index index.php;
+
+    client_max_body_size 100m;
+    client_body_timeout 120s;
+    sendfile off;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php\$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)\$;
+        fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
+        fastcgi_index index.php;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+EOF
+
+else
 
 # --- Nginx Setup ---
 tee /etc/nginx/sites-available/pterodactyl.conf > /dev/null << EOF
