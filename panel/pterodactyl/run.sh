@@ -118,28 +118,99 @@ uninstall_logic() {
     systemctl daemon-reload
 
     status_msg "WAIT" "Removing cronjobs..."
-    crontab -l | grep -v 'php /var/www/pterodactyl/artisan schedule:run' | crontab - || true
+    crontab -l | grep -v 'php /var/www/pterodactyl/artisan schedule:run' | crontab - 2>/dev/null || true
 
     status_msg "WAIT" "Deleting panel files..."
     rm -rf /var/www/pterodactyl
 
-    status_msg "WAIT" "Dropping database and users..."
-    mysql -u root -e "DROP DATABASE IF EXISTS panel;"
-    mysql -u root -e "DROP USER IF EXISTS 'pterodactyl'@'127.0.0.1';"
-    mysql -u root -e "FLUSH PRIVILEGES;"
+    echo ""
+    echo "========================================"
+    echo "        Database Removal Mode"
+    echo "========================================"
+    echo "1) Default (panel / pterodactyl)"
+    echo "2) Custom"
+    echo "3) Skip Database Removal"
+    echo "========================================"
+
+    read -rp "Select option [1-3]: " DB_MODE
+
+    case "$DB_MODE" in
+        1)
+            DB_NAME="panel"
+            DB_USER="pterodactyl"
+            DB_HOST="127.0.0.1"
+            ;;
+
+        2)
+            ask "Database Name" "panel" DB_NAME
+            ask "Database User" "pterodactyl" DB_USER
+            ask "Database Host" "127.0.0.1" DB_HOST
+            ;;
+
+        3)
+            status_msg "INFO" "Skipping database removal."
+            ;;
+
+        *)
+            status_msg "ERROR" "Invalid option!"
+            return 1
+            ;;
+    esac
+
+    if [ "$DB_MODE" != "3" ]; then
+        echo ""
+        echo "Database : $DB_NAME"
+        echo "User     : $DB_USER@$DB_HOST"
+        echo ""
+
+        read -rp "Delete selected database and user? (y/N): " CONFIRM
+
+        if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+            status_msg "WAIT" "Dropping database and user..."
+            mysql -u root -e "DROP DATABASE IF EXISTS \`$DB_NAME\`;"
+            mysql -u root -e "DROP USER IF EXISTS '$DB_USER'@'$DB_HOST';"
+            mysql -u root -e "FLUSH PRIVILEGES;"
+            status_msg "OK" "Database removed."
+        else
+            status_msg "INFO" "Database removal skipped."
+        fi
+    fi
 
     status_msg "WAIT" "Cleaning Nginx configs..."
     rm -f /etc/nginx/sites-enabled/pterodactyl.conf
     rm -f /etc/nginx/sites-available/pterodactyl.conf
-    systemctl reload nginx || true
+    systemctl reload nginx 2>/dev/null || true
+
+    status_msg "WAIT" "Removing SSL certificates..."
+    rm -rf /etc/certs/panel
+    rm -rf /etc/letsencrypt/live/* 2>/dev/null || true
+    rm -rf /etc/letsencrypt/archive/* 2>/dev/null || true
+    rm -rf /etc/letsencrypt/renewal/* 2>/dev/null || true
+
+    status_msg "SUCCESS" "Panel files removed successfully."
 }
 
 uninstall_ptero() {
     show_header "UNINSTALLATION"
-    
-    echo -e "${RED}  WARNING: This will delete all panel data and databases!${NC}"
-    read -p "  Are you sure you want to proceed? (y/N): " confirm
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+
+    echo -e "${RED}WARNING:${NC} This will uninstall the Pterodactyl Panel."
+    echo ""
+    echo "The following will be removed:"
+    echo "  • Panel files"
+    echo "  • Nginx configuration"
+    echo "  • Cron jobs"
+    echo "  • pteroq service"
+    echo "  • SSL certificates"
+    echo ""
+    echo "Database Removal Options:"
+    echo "  1) Default (panel / pterodactyl)"
+    echo "  2) Custom"
+    echo "  3) Skip database removal"
+    echo ""
+
+    read -rp "Are you sure you want to continue? (y/N): " confirm
+
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         status_msg "INFO" "Uninstallation cancelled."
         pause
         return
@@ -147,9 +218,10 @@ uninstall_ptero() {
 
     echo ""
     uninstall_logic
-    
+
     echo ""
-    status_msg "OK" "Panel removed successfully (Wings untouched)."
+    status_msg "OK" "Pterodactyl Panel uninstalled successfully."
+    status_msg "INFO" "Wings was NOT removed."
     pause
 }
 
