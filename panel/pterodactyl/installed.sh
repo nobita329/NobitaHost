@@ -143,6 +143,9 @@ ask "Panel Domain" "panel.nobita.indevs.in" DOMAIN
 ask "Admin Email" "admin@gmail.com" EMAIL
 ask "Admin Username" "admin" USERNAME
 ask_timeout "Admin Password" "admin" PASSWORD
+ask "Database Name" "panel" DB_NAME
+ask "Database User" "pterodactyl" DB_USER
+ask "Database Password" "yourPassword" DB_PASS
 select_version "$GITHUB_REPO" "version_PANEL"
 
 # --- FINAL VALIDATION LOOP ---
@@ -218,9 +221,6 @@ tar -xzf panel.tar.gz
 chmod -R 755 storage/* bootstrap/cache/
 
 # --- MariaDB Setup ---
-DB_NAME=panel
-DB_USER=pterodactyl
-DB_PASS=yourPassword
 mariadb -e "CREATE USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';" 2>/dev/null || true
 mariadb -e "CREATE DATABASE ${DB_NAME};" 2>/dev/null || true
 mariadb -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'127.0.0.1' WITH GRANT OPTION;"
