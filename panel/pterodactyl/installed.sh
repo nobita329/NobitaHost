@@ -8,6 +8,7 @@ WHITE='\033[38;5;255m'
 GREEN='\033[38;5;82m'
 RED='\033[38;5;196m'
 GOLD='\033[38;5;214m'
+YELLOW='\033[38;5;228m'
 NC='\033[0m'
 HEADER_LINE="${GRAY}────────────────────────────────────────────────────────────${NC}"
 GITHUB_REPO="pterodactyl/panel"
@@ -139,6 +140,7 @@ select_version() {
 show_banner
 
 # --- DATA COLLECTION ---
+
 ask "Panel Domain" "panel.nobita.indevs.in" DOMAIN
 ask "Admin Email" "admin@gmail.com" EMAIL
 ask "Admin Username" "admin" USERNAME
@@ -149,13 +151,25 @@ ask "Database Password" "yourPassword" DB_PASS
 select_version "$GITHUB_REPO" "version_PANEL"
 ask "SSL Type (y=Local, n=Certbot, 0=None)" "y" SSL_TYPE
 
+# Convert SSL option to readable text
+case "$SSL_TYPE" in
+    y|Y) SSL_NAME="Local SSL (Self-Signed)" ;;
+    n|N) SSL_NAME="Certbot (Let's Encrypt)" ;;
+    0)   SSL_NAME="No SSL (HTTP Only)" ;;
+    *)   SSL_NAME="Invalid" ;;
+esac
+
 # --- FINAL VALIDATION LOOP ---
+
 echo -e "\n  ${GOLD}┌─[ REVIEW CONFIGURATION ]${NC}"
-echo -e "  ${GOLD}│${NC} ${GRAY}Domain:${NC}   $DOMAIN"
-echo -e "  ${GOLD}│${NC} ${GRAY}Email:${NC}    $EMAIL"
-echo -e "  ${GOLD}│${NC} ${GRAY}User:${NC}     $USERNAME"
-echo -e "  ${GOLD}│${NC} ${GRAY}Version:${NC}  $version_PANEL"
-echo -e "  ${GOLD}└───────────────────────────${NC}"
+echo -e "  ${GOLD}│${NC} ${GRAY}Domain:${NC}      $DOMAIN"
+echo -e "  ${GOLD}│${NC} ${GRAY}Email:${NC}       $EMAIL"
+echo -e "  ${GOLD}│${NC} ${GRAY}Username:${NC}    $USERNAME"
+echo -e "  ${GOLD}│${NC} ${GRAY}Database:${NC}    $DB_NAME"
+echo -e "  ${GOLD}│${NC} ${GRAY}DB User:${NC}     $DB_USER"
+echo -e "  ${GOLD}│${NC} ${GRAY}Version:${NC}     $version_PANEL"
+echo -e "  ${GOLD}│${NC} ${GRAY}SSL Type:${NC}    $SSL_NAME"
+echo -e "  ${GOLD}└────────────────────────────────────${NC}"
 
 while true; do
     echo -ne "\n  ${CYAN}Start Installation?${NC} ${WHITE}(y/n)${NC}${GRAY}:${NC} "
@@ -203,7 +217,7 @@ echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://pack
 apt update
 
 # --- Install PHP + extensions ---
-apt install -y php${PHP_VERSION} php${PHP_VERSION}-{cli,fpm,common,mysql,mbstring,bcmath,xml,zip,curl,gd,tokenizer,ctype,simplexml,dom} mariadb-server nginx redis-server
+apt install -y php${PHP_VERSION} php${PHP_VERSION}-{cli,fpm,common,mysql,mbstring,bcmath,xml,zip,curl,gd,tokenizer,ctype} mariadb-server nginx redis-server
 apt install -y certbot python3-certbot-nginx
 
 # --- Install Composer ---
@@ -233,7 +247,11 @@ if [ ! -f ".env.example" ]; then
     curl -Lo .env.example https://raw.githubusercontent.com/pterodactyl/panel/develop/.env.example
 fi
 cp .env.example .env
-sed -i "s|APP_URL=.*|APP_URL=https://${DOMAIN}|g" .env
+if [ "$SSL_TYPE" = "0" ]; then
+    sed -i "s|APP_URL=.*|APP_URL=http://${DOMAIN}|g" .env
+else
+    sed -i "s|APP_URL=.*|APP_URL=https://${DOMAIN}|g" .env
+fi
 sed -i "s|DB_DATABASE=.*|DB_DATABASE=${DB_NAME}|g" .env
 sed -i "s|DB_USERNAME=.*|DB_USERNAME=${DB_USER}|g" .env
 sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${DB_PASS}|g" .env
@@ -256,42 +274,7 @@ apt install -y cron
 systemctl enable --now cron
 (crontab -l 2>/dev/null; echo "* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1") | crontab -
 
-# --- SSL Setup ---
-if [ "$SSL_TYPE" = "y" ]; then
-    echo "Using Local SSL..."
-
-mkdir -p /etc/certs/panel
-openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
-    -subj "/C=NA/ST=NA/L=NA/O=NA/CN=${DOMAIN}" \
-    -keyout /etc/certs/panel/privkey.pem -out /etc/certs/panel/fullchain.pem
-
-elif [ "$SSL_TYPE" = "n" ]; then
-    echo "Using Certbot SSL..."
-
-
-    certbot certonly \
-        --nginx \
-        --non-interactive \
-        --agree-tos \
-        --register-unsafely-without-email \
-        -d "${DOMAIN}"
-
-    mkdir -p /etc/certs/panel
-
-    ln -sf /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/certs/panel/fullchain.pem
-    ln -sf /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/certs/panel/privkey.pem
-
-elif [ "$SSL_TYPE" = "0" ]; then
-    echo "Using HTTP only (No SSL)"
-
-else
-    echo "Invalid SSL option!"
-    exit 1
-fi
-
-# --- Nginx Setup ---
-if [ "$SSL_TYPE" = "0" ]; then
-
+# --- Nginx Setup (HTTP site first, enables certbot + no-SSL mode) ---
 cat > /etc/nginx/sites-available/pterodactyl.conf <<EOF
 server {
     listen 80;
@@ -322,9 +305,44 @@ server {
 }
 EOF
 
-else
+ln -sf /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/pterodactyl.conf
+nginx -t && systemctl restart nginx
 
-# --- Nginx Setup ---
+# --- SSL Setup ---
+if [ "$SSL_TYPE" = "y" ]; then
+    echo "Using Local SSL..."
+
+    mkdir -p /etc/certs/panel
+    openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
+        -subj "/C=NA/ST=NA/L=NA/O=NA/CN=${DOMAIN}" \
+        -keyout /etc/certs/panel/privkey.pem -out /etc/certs/panel/fullchain.pem
+
+elif [ "$SSL_TYPE" = "n" ]; then
+    echo "Using Certbot SSL..."
+
+    certbot certonly \
+        --nginx \
+        --non-interactive \
+        --agree-tos \
+        --register-unsafely-without-email \
+        -d "${DOMAIN}"
+
+    mkdir -p /etc/certs/panel
+
+    ln -sf /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/certs/panel/fullchain.pem
+    ln -sf /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/certs/panel/privkey.pem
+
+elif [ "$SSL_TYPE" = "0" ]; then
+    echo "Using HTTP only (No SSL)"
+
+else
+    echo "Invalid SSL option!"
+    exit 1
+fi
+
+# --- Final Nginx config (force HTTPS when SSL enabled) ---
+if [ "$SSL_TYPE" = "y" ] || [ "$SSL_TYPE" = "n" ]; then
+
 tee /etc/nginx/sites-available/pterodactyl.conf > /dev/null << EOF
 server {
     listen 80;
@@ -365,8 +383,8 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/pterodactyl.conf
-nginx -t && systemctl restart nginx
+    nginx -t && systemctl restart nginx
+fi
 
 # --- Queue Worker ---
 tee /etc/systemd/system/pteroq.service > /dev/null << 'EOF'
