@@ -55,12 +55,12 @@ echo -e "${GOLD}╚═╝  ╚═══╝ ╚═════╝   ╚═══�
     # --- ACTION GRID (SEGMENTED) ---
     echo -e "  ${B_CYAN}  DEPLOYMENT SERVICES${NC}"
     echo -e "  ${G}├─ ${W}[1]${NC} Vpanel                     ${G}├─ ${W}[5]${NC} Dpanel"
-    echo -e "  ${G}├─ ${W}[2]${NC} Mpanel                     ${G}├─ ${W}[6]${NC} System Optimizer"
-    echo -e "  ${G}└─ ${W}[3]${NC} Install Wings Node         ${G}└─ ${W}[7]${NC} No-KVM Virtualization"
+    echo -e "  ${G}├─ ${W}[2]${NC} Mpanel                     ${G}├─ ${W}[6]${NC} Apanel"
+    echo -e "  ${G}└─ ${W}[3]${NC} Soon                       ${G}└─ ${W}[7]${NC} Soon"
     echo -e ""
     
     echo -e "  ${B_PURPLE}  MAINTENANCE${NC}"
-    echo -e "  ${G}└─ ${W}[4]${NC} Utility Toolbox            ${B_RED}${NC}${BG_SHADE}${W} [8] SHUTDOWN ${NC}${B_RED}${NC}"
+    echo -e "  ${G}└─ ${W}[4]${NC} Soon Toolbox            ${B_RED}${NC}${BG_SHADE}${W} [8] SHUTDOWN ${NC}${B_RED}${NC}"
     
     # --- INTERACTIVE FOOTER ---
     echo -e "\n  ${G}───────────────────────────────────────────────────────────────────────────${NC}"
@@ -74,11 +74,11 @@ while true; do
     case $opt in
         1) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Vpanel.sh) ;;
         2) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Mpanel.sh) ;;
-        3) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/wings/run.sh) ;;
-        4) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Dpanel.sh) ;;
-        5) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/thame/chang/dev.sh) ;;
-        6) bash <(curl -s https://raw.githubusercontent.com/nobita329/The-Coding-Hub/refs/heads/main/srv/menu/System1.sh) ;;
-        7) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/no-kvm/run.sh) ;;
+        3) bash <(curl -s ) Soon ;;
+        4) bash <(curl -s ) Soon ;;
+        5) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Dpanel.sh)) ;;
+        6) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Apanel.sh) ;;
+        7) bash <(curl -s ) Soon ;;
         8|exit) 
             echo -e "\n  ${B_RED}DISCONNECTED.${NC} Goodbye, Nobita."
             exit 0 ;;
