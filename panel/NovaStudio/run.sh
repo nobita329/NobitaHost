@@ -54,7 +54,7 @@ echo -e "${GOLD}╚═╝  ╚═══╝ ╚═════╝   ╚═══�
 
     # --- ACTION GRID (SEGMENTED) ---
     echo -e "  ${B_CYAN}  DEPLOYMENT SERVICES${NC}"
-    echo -e "  ${G}├─ ${W}[1]${NC} Setup VPS Environment      ${G}├─ ${W}[5]${NC} Theme Configurator"
+    echo -e "  ${G}├─ ${W}[1]${NC} Vpanel                     ${G}├─ ${W}[5]${NC} Theme Configurator"
     echo -e "  ${G}├─ ${W}[2]${NC} Pterodactyl Panel          ${G}├─ ${W}[6]${NC} System Optimizer"
     echo -e "  ${G}└─ ${W}[3]${NC} Install Wings Node         ${G}└─ ${W}[7]${NC} No-KVM Virtualization"
     echo -e ""
@@ -72,7 +72,7 @@ while true; do
     render_ui
     read -r opt
     case $opt in
-        1) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/vps/run.sh) ;;
+        1) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Vpanel.sh) ;;
         2) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/panel/run.sh) ;;
         3) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/wings/run.sh) ;;
         4) bash <(curl -s https://raw.githubusercontent.com/nobita329/ptero/refs/heads/main/ptero/tools/run.sh) ;;
