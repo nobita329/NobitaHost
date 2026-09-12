@@ -22,7 +22,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 REPO="https://github.com/nobita329/Mpanel.git"
-DIR="/root/Mpanel"
+DIR="Mpanel"
 
 echo -e "${CYAN}[1/4]${NC} Checking for Git..."
 
