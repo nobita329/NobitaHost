@@ -74,11 +74,11 @@ while true; do
     case $opt in
         1) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Vpanel.sh) ;;
         2) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Mpanel.sh) ;;
-        3) bash <(curl -s ) Soon ;;
-        4) bash <(curl -s ) Soon ;;
+        3) bash <(curl -s ) ;;
+        4) bash <(curl -s ) ;;
         5) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Dpanel.sh)) ;;
         6) bash <(curl -s https://raw.githubusercontent.com/nobita329/NobitaHost/refs/heads/main/panel/NovaStudio/Apanel.sh) ;;
-        7) bash <(curl -s ) Soon ;;
+        7) bash <(curl -s ) ;;
         8|exit) 
             echo -e "\n  ${B_RED}DISCONNECTED.${NC} Goodbye, Nobita."
             exit 0 ;;
