@@ -22,7 +22,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 REPO="https://github.com/nobita329/vpanel-pro.git"
-DIR="/root/vpanel-pro"
+DIR="vpanel-pro"
 
 echo -e "${CYAN}[1/4]${NC} Checking for Git..."
 
