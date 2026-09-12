@@ -24,7 +24,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 REPO="https://github.com/nobita329/dpanel.git"
-DIR="/root/dpanel"
+DIR="dpanel"
 
 # Check Git
 if ! command -v git >/dev/null 2>&1; then
